@@ -1,21 +1,19 @@
 import React, { useState } from 'react';
+import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
 import { TextInput, View, Vibration, Text, StyleSheet } from 'react-native';
-
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import Constants from 'expo-constants';
-
 import Title from './components/Title'
-import { primaryColor, secondaryColor, tertiaryColor } from './components/ColorConstants'
+import FillingElement from './components/FillingElement'
+import { scale, verticalScale, moderateScale } from './components/Scaling'
+import { primaryColor, secondaryColor, darkColor } from './components/ColorConstants'
 import CustomButton from './components/CustomButtons'
 
-let workTimeMin = 25;
-let workTimeSec = 0;
-let restTimeMin = 5;
-let restTimeSec = 0;
+let workTime = 25;
+let restTime = 5;
 const DURATION = 800; 
-
 const Stack = createStackNavigator();
 
 const styles = StyleSheet.create({
@@ -37,20 +35,20 @@ const styles = StyleSheet.create({
   },
   titleStyle: {
     textAlign: 'center',
-    fontSize: 70, 
+  
+    fontSize: scale(75), 
     fontWeight: "900",
     borderRadius: 10,
     color: primaryColor, 
   },
   textInputContainer: {
-    flexDirection: 'row',
-    paddingBottom: 10,
+    padding: scale(20),
+  },
+  textInputStyle: {
   },
   countdownStyle: {
-    fontSize: 100,
-  },
-  instructionTextStyle: {
-    fontSize: 50,
+    fontSize: scale(100),
+    color: darkColor,
   },
   buttonContainer: {
     width: '95%',
@@ -58,9 +56,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
   },
-  bigButtonStyle: {
-    width: '95%',
-    backgroundColor: primaryColor,
+  bigButtonStyle: { width: '95%',
+       backgroundColor: primaryColor,
   },
   smallButtonStyle: {
     width: '45%',
@@ -72,9 +69,16 @@ class HomeScreen extends React.Component {
     super();
     this.state = {
       resting: false,
-      count: workTimeMin * 60 + workTimeSec,
+      count: workTime * 60, 
     };
   }
+  _activate = () => {
+    activateKeepAwake();
+  };
+
+  _deactivate = () => {
+    deactivateKeepAwake();
+  };
 
   toggleCountdown(){
     if (this.isCounting !== undefined){
@@ -87,10 +91,13 @@ class HomeScreen extends React.Component {
   pauseCountdown(){
     clearInterval(this.isCounting)
     this.isCounting = undefined;
+    this._deactivate()
   }
 
   startCountdown = () =>{
     this.isCounting = setInterval(this.countdown, 1000)
+    this._activate
+    activateKeepAwake()
   }
 
   countdown = () => {
@@ -101,41 +108,37 @@ class HomeScreen extends React.Component {
     } else if (this.state.resting === false) {
       Vibration.vibrate(DURATION)
       this.setState({
-        count: restTimeMin * 60 + restTimeSec,
+        count: restTime * 60,
         resting: true,
       })
     } else {
       Vibration.vibrate(DURATION)
       this.setState({
-        count: workTimeMin * 60 + workTimeSec,
+        count: workTime * 60,
         resting: false,
       })
     }
   }
 
   resetCountdown = () => {
+    this._deactivate()
     if (this.isCounting !== undefined){
       this.pauseCountdown()
     }
     this.setState({
-      count: workTimeMin * 60 + workTimeSec,
+      count: workTime * 60,
     })
   }
 
-  setWorkTimeMin(value) {
-    workTimeMin = parseInt(value)
+  setWorkTime (value) {
+    workTime = parseInt(value)
   }
   
-  setWorkTimeSec(value) {
-    workTimeSec = parseInt(value)
-  }
-
-  setRestTimeMin(value) {
-    restTimeMin = parseInt(value)
-  }
-
-  setRestTimeSec(value) {
-    restTimeSec = parseInt(value)
+  setRestTime = (value) => {
+    restTime = parseInt(value)
+    this.setState({
+      resting: false
+    })
   }
 
   render() {
@@ -161,13 +164,11 @@ class HomeScreen extends React.Component {
               title="Reset" onPress={() => this.resetCountdown()} 
             />
             <CustomButton 
-              style={[styles.smallButtonStyle, { backgroundColor: tertiaryColor }]} 
+              style={[styles.smallButtonStyle, { backgroundColor: darkColor }]} 
               title="Settings" onPress={() => 
                 navigation.navigate('Settings', { 
-                  setWorkTimeMin: this.setWorkTimeMin,
-                  setWorkTimeSec: this.setWorkTimeSec,
-                  setRestTimeMin: this.setRestTimeMin,
-                  setRestTimeSec: this.setRestTimeSec,
+                  setWorkTime: this.setWorkTime,
+                  setRestTime: this.setRestTime,
                   resetCountdown: this.resetCountdown,
                 })} 
             />
@@ -180,21 +181,9 @@ class HomeScreen extends React.Component {
 
 function SettingsScreen(props) {
   const { navigation } = props
-  const { setWorkTimeSec, setWorkTimeMin, setRestTimeSec, setRestTimeMin, resetCountdown } = props.route.params
-  const [madeChanges, setMadeChanges] = useState(false);
-  let workMinChanged, workSecChanged, restMinChanged, restSecChanged
-  workMinChanged = workSecChanged = restMinChanged = restSecChanged = false
+  const { setWorkTime, setRestTime, resetCountdown } = props.route.params
+  const [madeChanges, setMadeChanges] = useState(false); 
   function goBack(){
-    console.log( workMinChanged)
-    if (workSecChanged && !workMinChanged){
-      setWorkTimeMin(0)
-    } else if (!workSecChanged && workMinChanged){
-      setWorkTimeSec(0)
-    } else if (restSecChanged && !restMinChanged){
-      setRestTimeMin(0)
-    } else if (!restSecChanged && restMinChanged){
-      setRestTimeSec(0)
-    }
     if (madeChanges){
       resetCountdown()
     }
@@ -206,35 +195,23 @@ function SettingsScreen(props) {
         <Title style={styles.titleStyle} />
         <View style={styles.textInputContainer}>
           <TextInput 
-            style={{margin: 10}}
-            placeholder="Work (min)" 
+            style={styles.textInputStyle}
+            textAlign='center'
+            placeholder="Work" 
             keyboardType="numeric"
-            onChangeText={value => { setMadeChanges(true) ; setWorkTimeMin(value) ; workMinChanged = true }
-          }
-          />
-          <TextInput 
-            style={{margin: 10}}
-            placeholder="Work (sec)" 
-            keyboardType="numeric"
-            onChangeText={value => { setMadeChanges(true) ; setWorkTimeSec(value) ; workSecChanged = true }
+            onChangeText={value => { setMadeChanges(true) ; setWorkTime(value) }
           }
           />
         </View>
+          
         <View style={styles.textInputContainer}>
           <TextInput 
-            style={{margin: 10}}
-            placeholder="Rest (min)" 
+            style={styles.textInputStyle}
+            textAlign='center'
+            placeholder="Rest" 
             keyboardType="numeric"
-            onChangeText={value => { setMadeChanges(true) ; setRestTimeMin(value) ; restMinChanged = true }
-          }
-          />
-          
-          <TextInput 
-            style={{margin: 10}}
-            placeholder="Rest (sec)" 
-            keyboardType="numeric"
-            onChangeText={value => { setMadeChanges(true) ; setRestTimeSec(value) ; restMinChanged = true }
-          }
+            onChangeText={value => { setMadeChanges(true) ; setRestTime(value) }
+          } 
           />
         </View>
         <CustomButton 
