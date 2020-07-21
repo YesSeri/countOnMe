@@ -6,9 +6,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import Constants from 'expo-constants';
 import Title from './components/Title'
-import FillingElement from './components/FillingElement'
-import { scale, verticalScale, moderateScale } from './components/Scaling'
-import { primaryColor, secondaryColor, darkColor } from './components/ColorConstants'
+import { scale } from './components/Scaling'
+import { primaryColor, secondaryColor, lightColor, darkColor } from './components/ColorConstants'
 import CustomButton from './components/CustomButtons'
 
 let workTime = 25;
@@ -21,38 +20,61 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     paddingTop: Constants.statusBarHeight,
-    backgroundColor: '#ddd',
+    backgroundColor: lightColor,
     alignItems: 'center',
     justifyContent: 'center',
   },
   innerAppContainer: {
     width: '95%',
     height: '98%',
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-evenly',
     borderRadius: 10,
-    backgroundColor: '#fff',
   },
   titleStyle: {
-    textAlign: 'center',
-  
-    fontSize: scale(75), 
+    fontSize: scale(65), 
     fontWeight: "900",
     borderRadius: 10,
     color: primaryColor, 
+    textShadowColor: darkColor,
+    textShadowOffset: {width: 1, height: 1},
+    textShadowRadius:3 
+  },
+  boxContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    width: '100%',
+    height: '37%', 
+    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smallerBoxContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    width: '100%',
+    height: '20%', 
+    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textInputContainer: {
     padding: scale(20),
   },
-  textInputStyle: {
-  },
   countdownStyle: {
     fontSize: scale(100),
     color: darkColor,
+    textShadowColor: darkColor,
+    textShadowOffset: {width: 1, height: 1},
+    textShadowRadius:3 
   },
-  buttonContainer: {
+  bigButtonContainer: {
+    marginBottom: 10,
     width: '95%',
-    paddingBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  smallButtonContainer: {
+    width: '95%',
     flexDirection: 'row',
     justifyContent: 'space-around',
   },
@@ -94,7 +116,7 @@ class HomeScreen extends React.Component {
     this._deactivate()
   }
 
-  startCountdown = () =>{
+  startCountdown(){
     this.isCounting = setInterval(this.countdown, 1000)
     this._activate
     activateKeepAwake()
@@ -146,32 +168,45 @@ class HomeScreen extends React.Component {
     return (
       <View style={styles.appContainer}>
         <View style={styles.innerAppContainer}>
-          <Title style={styles.titleStyle} resting={this.state.resting} isCounting={this.isCounting} />
-          <Text style={styles.countdownStyle} >
-            {parseInt(this.state.count / 60)}
-            :
-            {this.state.count % 60 < 10 ? '0' + this.state.count % 60: this.state.count % 60}
-          </Text>
-          <View style={styles.buttonContainer}>
-            <CustomButton 
-              style={styles.bigButtonStyle} 
-              title="Toggle" onPress={() => this.toggleCountdown()} 
+          <View style={styles.boxContainer}>
+            <Title 
+              style={styles.titleStyle} 
+              resting={this.state.resting} 
+              isCounting={this.isCounting} 
             />
           </View>
-          <View style={styles.buttonContainer}>
-            <CustomButton 
-              style={[styles.smallButtonStyle, { backgroundColor: secondaryColor }]} 
-              title="Reset" onPress={() => this.resetCountdown()} 
-            />
-            <CustomButton 
-              style={[styles.smallButtonStyle, { backgroundColor: darkColor }]} 
-              title="Settings" onPress={() => 
-                navigation.navigate('Settings', { 
-                  setWorkTime: this.setWorkTime,
-                  setRestTime: this.setRestTime,
-                  resetCountdown: this.resetCountdown,
-                })} 
-            />
+          <View style={styles.boxContainer}>
+            <Text style={styles.countdownStyle} >
+              {parseInt(this.state.count / 60)}
+              :
+              {this.state.count % 60 < 10 ? '0' + this.state.count % 60: this.state.count % 60}
+            </Text>
+          </View>
+          <View style={styles.smallerBoxContainer}>
+            <View style={styles.bigButtonContainer}>
+              <CustomButton 
+                style={styles.bigButtonStyle} 
+                title="Toggle" 
+                onPress={() => this.toggleCountdown()} 
+              />
+            </View>
+            <View style={styles.smallButtonContainer}>
+              <CustomButton 
+                style={[styles.smallButtonStyle, { backgroundColor: secondaryColor }]} 
+                title="Reset" 
+                onPress={ () => this.resetCountdown()} 
+              />
+              <CustomButton 
+                style={[styles.smallButtonStyle, { backgroundColor: darkColor }]} 
+                title="Settings" onPress={() => 
+                  navigation.navigate('Settings', { 
+                    setWorkTime: this.setWorkTime,
+                    setRestTime: this.setRestTime,
+                    resetCountdown: this.resetCountdown,
+                  })
+                } 
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -192,32 +227,37 @@ function SettingsScreen(props) {
   return(
     <View style={styles.appContainer}>
       <View style={styles.innerAppContainer}>
-        <Title style={styles.titleStyle} />
-        <View style={styles.textInputContainer}>
-          <TextInput 
-            style={styles.textInputStyle}
-            textAlign='center'
-            placeholder="Work" 
-            keyboardType="numeric"
-            onChangeText={value => { setMadeChanges(true) ; setWorkTime(value) }
-          }
+        <View style={styles.boxContainer}>
+         <Title style={styles.titleStyle} />
+        </View>
+        <View style={styles.boxContainer}>
+          <View style={styles.textInputContainer}>
+            <TextInput 
+              style={styles.textInputStyle}
+              textAlign='center'
+              placeholder="Work" 
+              keyboardType="numeric"
+              onChangeText={value => { setMadeChanges(true) ; setWorkTime(value) }
+            }
+            />
+          </View>
+          <View style={styles.textInputContainer}>
+            <TextInput 
+              style={styles.textInputStyle}
+              textAlign='center'
+              placeholder="Rest" 
+              keyboardType="numeric"
+              onChangeText={value => { setMadeChanges(true) ; setRestTime(value) }
+            } 
+            />
+          </View>
+        </View>
+        <View style={styles.smallerBoxContainer}>
+          <CustomButton 
+            style={styles.bigButtonStyle}
+            title="Back" onPress={() => goBack() } 
           />
         </View>
-          
-        <View style={styles.textInputContainer}>
-          <TextInput 
-            style={styles.textInputStyle}
-            textAlign='center'
-            placeholder="Rest" 
-            keyboardType="numeric"
-            onChangeText={value => { setMadeChanges(true) ; setRestTime(value) }
-          } 
-          />
-        </View>
-        <CustomButton 
-          style={styles.bigButtonStyle}
-          title="Back" onPress={() => goBack() } 
-        />
       </View>
     </View>
   )
@@ -234,5 +274,4 @@ class App extends React.Component{
     )
   }
 }
-
 export default App;

@@ -8,8 +8,8 @@ export default function Title (props) {
     const color = y === 'Rest' ? darkColor : y === 'Work' ? secondaryColor : primaryColor
     return (
         <>
-            <Text h1 style={[props.style, {margin: 0}]}>Count On</Text>
-            <Text h1 style={[props.style, {margin: 0, color: color}]}>{y}</Text>
+            <Text h1 style={props.style}>Count On</Text>
+            <Text h1 style={[props.style, { color: color }]}>{y}</Text>
         </>
-        )
+    )
 }
