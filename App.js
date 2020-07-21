@@ -10,8 +10,6 @@ import { scale } from './components/Scaling'
 import { primaryColor, secondaryColor, lightColor, darkColor } from './components/ColorConstants'
 import CustomButton from './components/CustomButtons'
 
-let workTime = 25;
-let restTime = 5;
 const DURATION = 800; 
 const Stack = createStackNavigator();
 
@@ -91,10 +89,12 @@ class HomeScreen extends React.Component {
     super();
     this.state = {
       resting: false,
-      count: workTime * 60, 
+      count: 25 * 60, 
+      restTime: 5,
+      workTime: 25,
     };
   }
-  _activate = () => {
+  _activate = () => { // These two functions are used to stop the phone from going into sleep mode. 
     activateKeepAwake();
   };
 
@@ -111,60 +111,58 @@ class HomeScreen extends React.Component {
   }
 
   pauseCountdown(){
-    clearInterval(this.isCounting)
+    clearInterval(this.isCounting) // This pauses the function. Note the this.isCounting
     this.isCounting = undefined;
     this._deactivate()
   }
 
   startCountdown(){
-    this.isCounting = setInterval(this.countdown, 1000)
+    this.isCounting = setInterval(this.countdown, 1000) // Here the countdown is started with setInterval
     this._activate
     activateKeepAwake()
   }
 
-  countdown = () => {
+  countdown = () => { // Runs every 1 sec. If count is not zero it counts down further, otherwise it switches mode between work and rest, and sets the correct time.
     if (this.state.count !== 0) {
       this.setState({
         count: this.state.count - 1,
       })
-    } else if (this.state.resting === false) {
-      Vibration.vibrate(DURATION)
-      this.setState({
-        count: restTime * 60,
-        resting: true,
-      })
     } else {
       Vibration.vibrate(DURATION)
+      const newTime = this.state.resting ? this.state.workTime : this.state.restTime
       this.setState({
-        count: workTime * 60,
-        resting: false,
+        count: newTime * 60,
+        resting: !this.state.resting,
       })
     }
   }
 
   resetCountdown = () => {
-    this._deactivate()
+    this._deactivate() // Lets the phone enter sleep mode again, since countdown is no longer active. 
     if (this.isCounting !== undefined){
       this.pauseCountdown()
     }
     this.setState({
-      count: workTime * 60,
+      count: this.state.workTime * 60,
     })
   }
 
-  setWorkTime (value) {
-    workTime = parseInt(value)
+  setWorkTime = (value) => {  // Very important that resetCountdown is a callback function, within setstate. Otherwise resetCountdown gets called before new state is set, and the app is shit. 
+    this.setState({
+      resting: false,
+      workTime: parseInt(value),
+    }, this.resetCountdown)
   }
   
-  setRestTime = (value) => {
-    restTime = parseInt(value)
+  setRestTime = (value) => { 
     this.setState({
-      resting: false
-    })
+      resting: false,
+      restTime: parseInt(value),
+    }, this.resetCountdown())
   }
 
   render() {
-    const {navigation} = this.props;
+    const {navigation} = this.props; // Needed for making navigation work. 
     return (
       <View style={styles.appContainer}>
         <View style={styles.innerAppContainer}>
@@ -177,7 +175,7 @@ class HomeScreen extends React.Component {
           </View>
           <View style={styles.boxContainer}>
             <Text style={styles.countdownStyle} >
-              {parseInt(this.state.count / 60)}
+              {parseInt(this.state.count / 60)} 
               :
               {this.state.count % 60 < 10 ? '0' + this.state.count % 60: this.state.count % 60}
             </Text>
@@ -214,16 +212,9 @@ class HomeScreen extends React.Component {
   }
 }
 
-function SettingsScreen(props) {
+function SettingsScreen(props) { // Now that workTime and restTime is in state, it would be easy to implement seconds as an option. 
   const { navigation } = props
-  const { setWorkTime, setRestTime, resetCountdown } = props.route.params
-  const [madeChanges, setMadeChanges] = useState(false); 
-  function goBack(){
-    if (madeChanges){
-      resetCountdown()
-    }
-    navigation.navigate('Home')
-  }
+  const { setWorkTime, setRestTime } = props.route.params // Extracts the functions I sent through the navigation. 
   return(
     <View style={styles.appContainer}>
       <View style={styles.innerAppContainer}>
@@ -237,8 +228,7 @@ function SettingsScreen(props) {
               textAlign='center'
               placeholder="Work" 
               keyboardType="numeric"
-              onChangeText={value => { setMadeChanges(true) ; setWorkTime(value) }
-            }
+              onChangeText={value => setWorkTime(value) }
             />
           </View>
           <View style={styles.textInputContainer}>
@@ -247,21 +237,23 @@ function SettingsScreen(props) {
               textAlign='center'
               placeholder="Rest" 
               keyboardType="numeric"
-              onChangeText={value => { setMadeChanges(true) ; setRestTime(value) }
-            } 
+              onChangeText={value => setRestTime(value) } 
             />
           </View>
         </View>
         <View style={styles.smallerBoxContainer}>
           <CustomButton 
             style={styles.bigButtonStyle}
-            title="Back" onPress={() => goBack() } 
+            title="Back" onPress={() => 
+              navigation.navigate('Home')
+            } 
           />
         </View>
       </View>
     </View>
   )
 }
+
 class App extends React.Component{
   render(){
     return (
@@ -274,4 +266,5 @@ class App extends React.Component{
     )
   }
 }
+
 export default App;
